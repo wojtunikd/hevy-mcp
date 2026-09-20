@@ -13,6 +13,6 @@
   // Non-secret vars. Set PUBLIC_URL to your deployed URL (workers.dev or a custom domain).
   // Secrets (HEVY_API_KEY, MCP_PASSWORD, JWT_SECRET) are set with `wrangler secret put`.
   "vars": {
-    "PUBLIC_URL": "https://hevy-mcp.YOUR-SUBDOMAIN.workers.dev"
+    "PUBLIC_URL": "https://hevy-mcp.wojtunikdw.workers.dev"
   }
 }
