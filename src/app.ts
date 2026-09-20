@@ -8,6 +8,7 @@ import { ensureConfig, type EnvSource } from "./config.ts";
 import { authApp } from "./auth/routes.ts";
 import { requireBearer } from "./auth/middleware.ts";
 import { buildMcpServer } from "./mcp/server.ts";
+import { hevyRequest } from "./hevy/client.ts";
 
 // Picks the right environment source for the current runtime. On Workers the
 // bindings arrive as `c.env`; on Bun/Node they live on process.env.
@@ -39,6 +40,24 @@ app.use(
 
 // Unauthenticated health check for Coolify/Traefik/uptime probes.
 app.get("/health", (c) => c.json({ status: "ok", service: "hevy-mcp" }));
+
+// Read-only export for plain-GET clients, gated by EXPORT_TOKEN.
+const EXPORT_PATHS: Record<string, string> = {
+  workouts: "/v1/workouts",
+  routines: "/v1/routines",
+  templates: "/v1/exercise_templates",
+};
+app.get("/export/:kind", async (c) => {
+  const expected = envSource(c).EXPORT_TOKEN;
+  const given = c.req.query("token");
+  if (!expected || !given || given !== expected) return c.text("unauthorized", 401);
+  const path = EXPORT_PATHS[c.req.param("kind")];
+  if (!path) return c.text("unknown export", 404);
+  const data = await hevyRequest("GET", path, {
+    query: { page: c.req.query("page") ?? 1, pageSize: c.req.query("pageSize") ?? 10 },
+  });
+  return c.json(data);
+});
 
 // OAuth: /authorize, /token, /register, /.well-known/*
 app.route("/", authApp);
